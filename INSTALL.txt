@@ -1,0 +1,158 @@
+ACERBE™ v3.1.0 — INSTALLATION & DEPLOYMENT GUIDE
+Archer Chain Analytics™ | Mahihkan.com
+Four-Layer Cryptographic Protection | Standalone + RaPaX™ Integration
+════════════════════════════════════════════════════════════
+
+WHAT CHANGED IN v3.1.0
+────────────────────────────────────────────────────────────
+All four v3.0.0 gaps are closed:
+
+  [Gap 1] DOCX / XLSX / PPTX / ODT no longer corrupt.
+          Fingerprint is embedded INSIDE the Office zip as an
+          internal part (acerbe/fingerprint.txt). Files open
+          normally in Word, Excel, PowerPoint, LibreOffice.
+
+  [Gap 2] SVG now routes through the text path and receives a
+          proper fingerprint. Remains valid XML.
+
+  [Gap 3] Script/code files (.rb .lua .c .cpp .go .rs .sol .java
+          .swift .kt .php .pl .r and more) now route through the
+          text path — full fingerprint, not partial.
+
+  [Gap 4] Manifest now records output_hash and output_size —
+          SHA256 of the fingerprinted file itself. Detects any
+          tampering AFTER AcerbE processed the file.
+
+════════════════════════════════════════════════════════════
+SYSTEM REQUIREMENTS
+────────────────────────────────────────────────────────────
+Python 3.10+
+pip
+tkinter (bundled with standard Python — GUI only)
+
+════════════════════════════════════════════════════════════
+STEP 1 — SET YOUR SECRET KEY (ONCE, PERMANENT)
+────────────────────────────────────────────────────────────
+The ACERBE_SECRET_KEY is the cryptographic root of every
+HMAC-SHA256 signature. Set it once. NEVER change it — changing
+it invalidates verification of all previously fingerprinted files.
+
+Windows (permanent):
+  Start → "Environment Variables" → System Variables → New
+    Name : ACERBE_SECRET_KEY
+    Value: <your-key-minimum-32-characters>
+  Restart open terminals.
+
+macOS / Linux (permanent) — add to ~/.zshrc or ~/.bashrc:
+  export ACERBE_SECRET_KEY="your-key-minimum-32-characters"
+  source ~/.zshrc
+
+════════════════════════════════════════════════════════════
+STEP 2 — INSTALL DEPENDENCIES
+────────────────────────────────────────────────────────────
+  cd AcerbE_v3
+  pip install -r requirements.txt
+
+════════════════════════════════════════════════════════════
+STEP 3A — STANDALONE USE (GUI)
+────────────────────────────────────────────────────────────
+Windows:  launchers\LAUNCH_WINDOWS.bat
+macOS/Linux:
+  chmod +x launchers/launch_mac_linux.sh
+  ./launchers/launch_mac_linux.sh
+
+EMBED tab  → fingerprint any file
+VERIFY tab → confirm a fingerprint + HMAC
+AUDIT LOG  → session operation record
+
+════════════════════════════════════════════════════════════
+STEP 3B — STANDALONE USE (CLI)
+────────────────────────────────────────────────────────────
+  python acerbe_cli.py embed  path/to/file.pdf --owner "Mahihkan"
+  python acerbe_cli.py verify path/to/ACERBE_*.pdf
+
+════════════════════════════════════════════════════════════
+STEP 3C — RAPAX™ INTEGRATION (PROGRAMMATIC)
+────────────────────────────────────────────────────────────
+Drop the acerbe/ package into RaPaX and call it directly at
+point of sale. No GUI, no server.
+
+  from acerbe import RaPaXFingerprinter
+
+  fp = RaPaXFingerprinter()   # reads ACERBE_SECRET_KEY from env
+
+  # Bind the asset to the buyer at checkout:
+  sale = fp.fingerprint_for_sale(
+      file_path   = "products/master/course.pdf",
+      buyer_id    = "order_1a2b3c",
+      output_dir  = "deliveries/order_1a2b3c",
+      product_name= "Sovereign Systems Course",
+  )
+  # → sale.delivery_file  : hand this to the buyer
+  # → sale.manifest_file  : retain for enforcement
+  # → sale.fingerprint    : short ID for the receipt
+  # → sale.output_hash    : integrity anchor
+
+  # If a leak appears later — trace it back to the buyer:
+  trace = fp.trace_leak("suspected_leak.pdf")
+  # → trace["bound_to"] is the buyer_id that copy was sold to
+
+  # Confirm a delivered file was not altered:
+  fp.verify_integrity("delivery.pdf", sale.output_hash)
+
+Live demo:
+  python -m acerbe.rapax_integration
+
+════════════════════════════════════════════════════════════
+FILE TYPE COVERAGE
+────────────────────────────────────────────────────────────
+TEXT PATH (marker fingerprint, 3 layers — LSB N/A):
+  code, scripts, markup, config, data — including
+  .py .js .ts .rb .lua .c .cpp .go .rs .sol .java .swift
+  .html .css .svg .xml .json .yaml .sql .csv .md and more
+
+PDF PATH (comment + LSB, 4 layers):
+  .pdf — header preserved, opens normally
+
+OFFICE PATH (internal zip part, 4 layers):
+  .docx .xlsx .pptx .dotx .xltx .potx .docm .xlsm .pptm
+  .odt .ods .odp — open normally in their applications
+
+BINARY PATH (header + LSB, 4 layers for files ≥ 8 KB):
+  images, audio, video, fonts, archives, executables,
+  AI model weights (.safetensors .gguf .onnx .pt),
+  3D assets (.blend .glb .fbx), and ALL other types.
+
+Unknown / unlisted extensions fall through to the binary
+path automatically — the engine never rejects a file for
+being an unrecognized type.
+
+════════════════════════════════════════════════════════════
+OUTPUT PER FILE
+────────────────────────────────────────────────────────────
+  ACERBE_<FINGERPRINT>_<original_name>   ← distribute this
+  MANIFEST_<FINGERPRINT>.json            ← retain (evidence)
+  ACERBE_AUDIT.log (appended)            ← operation record
+
+Manifest contains: manifest_id (UUID), owner_id, file_type,
+original_size, output_size, asset_hash, output_hash,
+HMAC-SHA256 signature, timestamp, layer status, issuer,
+jurisdiction.
+
+════════════════════════════════════════════════════════════
+NDA / LEGAL DOCUMENT WORKFLOW
+────────────────────────────────────────────────────────────
+1. Finalize the NDA (PDF or DOCX).
+2. GUI → EMBED → Owner ID = recipient name or "Mahihkan".
+3. Browse → select → EMBED FINGERPRINT.
+4. Send ACERBE_*.pdf / ACERBE_*.docx to the counterparty.
+5. Retain MANIFEST_*.json.
+6. On breach: present manifest + file for forensic comparison.
+   HMAC signature is cryptographic proof of ownership and
+   chain of custody.
+
+════════════════════════════════════════════════════════════
+Issuer: Archer Chain Analytics™ | Mahihkan.com
+Jurisdiction: Saskatchewan, Canada
+Version 3.1.0
+════════════════════════════════════════════════════════════
