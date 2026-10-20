@@ -70,6 +70,11 @@ def _check_key(provided: Optional[str], required=_REQUIRED) -> None:
     missing = [k for k in required if not os.environ.get(k)]
     if missing:
         raise HTTPException(503, detail="Service not configured: " + ", ".join(missing))
+    # Fail closed on weak or unresolved secrets (e.g. a literal "${{secret(48)}}" template that never expanded).
+    weak = [k for k in ("ACERBE_API_KEY", "ACERBE_SECRET_KEY")
+            if k in required and (len(os.environ[k]) < 32 or "${" in os.environ[k])]
+    if weak:
+        raise HTTPException(503, detail="Service not configured securely: " + ", ".join(weak))
     if not provided or not hmac.compare_digest(provided, os.environ["ACERBE_API_KEY"]):
         raise HTTPException(401, detail="Invalid API key.")
 
