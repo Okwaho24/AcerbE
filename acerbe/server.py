@@ -13,6 +13,7 @@ import os
 import time
 
 from .engine import embed_fingerprint, verify_fingerprint
+from .bridge import router as rapax_router
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ app = FastAPI(
     docs_url=None,   # Disable public Swagger docs in production
     redoc_url=None,
 )
+
+app.include_router(rapax_router)
 
 app.add_middleware(
     CORSMiddleware,

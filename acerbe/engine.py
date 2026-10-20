@@ -59,12 +59,13 @@ OFFICE_EXTENSIONS = {
     ".docx", ".xlsx", ".pptx", ".dotx", ".xltx", ".potx",
     ".docm", ".xlsm", ".pptm",
     ".odt", ".ods", ".odp",   # OpenDocument (also zip-based)
+    ".zip",                   # plain archives: embed inside, never prepend or LSB-modify
 }
 # Everything else treated as generic binary
 BINARY_EXTENSIONS = {
     ".doc", ".xls", ".ppt",
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp", ".ico",
-    ".zip", ".tar", ".gz", ".7z", ".rar",
+    ".tar", ".gz", ".7z", ".rar",
     ".exe", ".dll", ".so", ".dylib",
     ".mp3", ".mp4", ".mov", ".avi", ".wav", ".flac",
     ".wasm", ".bin", ".dat",
